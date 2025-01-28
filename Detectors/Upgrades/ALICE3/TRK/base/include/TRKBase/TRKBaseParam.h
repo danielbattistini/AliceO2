@@ -23,6 +23,7 @@ namespace trk
 enum eLayout {
   kCylinder = 0,
   kTurboStaves,
+  kStaggered,
 };
 
 struct TRKBaseParam : public o2::conf::ConfigurableParamHelper<TRKBaseParam> {
