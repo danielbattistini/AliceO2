@@ -124,10 +124,10 @@ void Detector::buildTRKNewVacuumVessel()
   mLayers[6].setLayout(trkPars.layoutML);
 
   // Outer tracker
-  mLayers[7].setLayout(trkPars.layoutOT);
-  mLayers[8].setLayout(trkPars.layoutOT);
-  mLayers[9].setLayout(trkPars.layoutOT);
-  mLayers[10].setLayout(trkPars.layoutOT);
+  mLayers[7].setLayout(trkPars.layoutOL);
+  mLayers[8].setLayout(trkPars.layoutOL);
+  mLayers[9].setLayout(trkPars.layoutOL);
+  mLayers[10].setLayout(trkPars.layoutOL);
 }
 
 void Detector::configFromFile(std::string fileName)

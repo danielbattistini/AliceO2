@@ -29,8 +29,8 @@ enum eLayout {
 struct TRKBaseParam : public o2::conf::ConfigurableParamHelper<TRKBaseParam> {
   std::string configFile = "";
   float serviceTubeX0 = 0.02f; // X0 Al2O3
-  eLayout layoutML = kCylinder;  // Type of segmentation for the Middle Layers
-  eLayout layoutOT = kCylinder;  // Type of segmentation for the Outer Tracker
+  eLayout layoutML = kCylinder;  // Type of segmentation for the middle layers
+  eLayout layoutOL = kCylinder;  // Type of segmentation for the outer layers
 
   O2ParamDef(TRKBaseParam, "TRKBase");
 };
