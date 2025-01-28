@@ -39,6 +39,9 @@ class TRKLayer
   auto getNumber() const { return mLayerNumber; }
   auto getName() const { return mLayerName; }
 
+  TGeoVolume* createSensor(std::string type);
+  TGeoVolume* createChip(std::string type);
+  TGeoVolume* createStave(std::string type);
   void createLayer(TGeoVolume* motherVolume);
 
  private:

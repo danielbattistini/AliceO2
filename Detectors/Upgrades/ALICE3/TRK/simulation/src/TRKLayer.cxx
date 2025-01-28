@@ -41,6 +41,82 @@ TRKLayer::TRKLayer(int layerNumber, std::string layerName, float rInn, float zLe
   LOGP(info, "Creating layer: id: {} rInner: {} rOuter: {} zLength: {} x2X0: {}", mLayerNumber, mInnerRadius, mOuterRadius, mZ, mX2X0);
 }
 
+TGeoVolume* TRKLayer::createSensor(std::string type)
+{
+  TGeoMedium* medSi = gGeoManager->GetMedium("TRK_SILICON$");
+  std::string sensName = Form("%s%d", GeometryTGeo::getTRKSensorPattern(), this->mLayerNumber);
+
+  TGeoShape* sensor;
+
+  if (type == "cylinder") {
+    sensor = new TGeoTube(mInnerRadius, mInnerRadius + mChipThickness, mZ / 2);
+  } else if (type == "flat") {
+    double width = mModuleWidth * 2; // Each stave has two modules (based on the LOI design)
+    sensor = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
+  } else {
+    LOGP(fatal, "Sensor of type '{}' is not implemented", type);
+  }
+
+  TGeoVolume* sensVol = new TGeoVolume(sensName.c_str(), sensor, medSi);
+  sensVol->SetLineColor(kYellow);
+
+  return sensVol;
+};
+
+TGeoVolume* TRKLayer::createChip(std::string type)
+{
+  TGeoMedium* medSi = gGeoManager->GetMedium("TRK_SILICON$");
+  std::string chipName = o2::trk::GeometryTGeo::getTRKChipPattern() + std::to_string(mLayerNumber);
+
+  TGeoShape* chip;
+  TGeoVolume* sensVol;
+
+  if (type == "cylinder") {
+    chip = new TGeoTube(mInnerRadius, mInnerRadius + mChipThickness, mZ / 2);
+    sensVol = createSensor("cylinder");
+  } else if (type == "flat") {
+    double width = mModuleWidth * 2; // Each stave has two modules (based on the LOI design)
+    chip = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
+    sensVol = createSensor("flat");
+  } else {
+    LOGP(fatal, "Sensor of type '{}' is not implemented", type);
+  }
+
+  TGeoVolume* chipVol = new TGeoVolume(chipName.c_str(), chip, medSi);
+  LOGP(info, "Inserting {} in {} ", sensVol->GetName(), chipVol->GetName());
+  chipVol->AddNode(sensVol, 1, nullptr);
+  chipVol->SetLineColor(kYellow);
+
+  return chipVol;
+}
+
+TGeoVolume* TRKLayer::createStave(std::string type)
+{
+  TGeoMedium* medAir = gGeoManager->GetMedium("TRK_AIR$");
+  std::string staveName = o2::trk::GeometryTGeo::getTRKStavePattern() + std::to_string(mLayerNumber);
+  
+  TGeoShape* stave;
+  TGeoVolume* chipVol;
+
+  if (type == "cylinder") {
+    stave = new TGeoTube(mInnerRadius, mInnerRadius + mChipThickness, mZ / 2);
+    chipVol = createChip("cylinder");
+  } else if (type == "flat") {
+    double width = mModuleWidth * 2; // Each stave has two modules (based on the LOI design)
+    stave = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
+    chipVol = createChip("flat");
+  } else {
+    LOGP(fatal, "Chip of type '{}' is not implemented", type);
+  }
+
+  TGeoVolume* staveVol = new TGeoVolume(staveName.c_str(), stave, medAir);
+  LOGP(info, "Inserting {} in {} ", chipVol->GetName(), staveVol->GetName());
+  staveVol->AddNode(chipVol, 1, nullptr);
+  staveVol->SetLineColor(kYellow);
+
+  return staveVol;
+}
+
 void TRKLayer::createLayer(TGeoVolume* motherVolume)
 {
   TGeoMedium* medSi = gGeoManager->GetMedium("TRK_SILICON$");
@@ -56,23 +132,7 @@ void TRKLayer::createLayer(TGeoVolume* motherVolume)
   layerVol->SetLineColor(kYellow);
 
   if (mLayout == eLayout::kCylinder) {
-    TGeoTube* stave = new TGeoTube(mInnerRadius, mInnerRadius + mChipThickness, mZ / 2);
-    TGeoTube* chip = new TGeoTube(mInnerRadius, mInnerRadius + mChipThickness, mZ / 2);
-    TGeoTube* sensor = new TGeoTube(mInnerRadius, mInnerRadius + mChipThickness, mZ / 2);
-
-    TGeoVolume* sensVol = new TGeoVolume(sensName.c_str(), sensor, medSi);
-    sensVol->SetLineColor(kYellow);
-    TGeoVolume* chipVol = new TGeoVolume(chipName.c_str(), chip, medSi);
-    chipVol->SetLineColor(kYellow);
-    TGeoVolume* staveVol = new TGeoVolume(staveName.c_str(), stave, medSi);
-    staveVol->SetLineColor(kYellow);
-
-    LOGP(info, "Inserting {} in {} ", sensVol->GetName(), chipVol->GetName());
-    chipVol->AddNode(sensVol, 1, nullptr);
-
-    LOGP(info, "Inserting {} in {} ", chipVol->GetName(), staveVol->GetName());
-    staveVol->AddNode(chipVol, 1, nullptr);
-
+    auto staveVol = createStave("cylinder");
     LOGP(info, "Inserting {} in {} ", staveVol->GetName(), layerVol->GetName());
     layerVol->AddNode(staveVol, 1, nullptr);
   } else if (mLayout == eLayout::kTurboStaves) {
@@ -91,16 +151,7 @@ void TRKLayer::createLayer(TGeoVolume* motherVolume)
     LOGP(info, "Creating a layer with {} staves and {} mm overlap", nStaves, overlap * 10);
 
     for (int iStave = 0; iStave < nStaves; iStave++) {
-      TGeoBBox* sensor = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
-      TGeoBBox* chip = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
-      TGeoBBox* stave = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
-
-      TGeoVolume* sensVol = new TGeoVolume(sensName.c_str(), sensor, medSi);
-      sensVol->SetLineColor(kYellow);
-      TGeoVolume* chipVol = new TGeoVolume(chipName.c_str(), chip, medSi);
-      chipVol->SetLineColor(kYellow);
-      TGeoVolume* staveVol = new TGeoVolume(staveName.c_str(), stave, medSi);
-      staveVol->SetLineColor(kYellow);
+      TGeoVolume* staveVol = createStave("flat");
 
       // Put the staves in the correct position and orientation
       TGeoCombiTrans* trans = new TGeoCombiTrans();
@@ -108,12 +159,6 @@ void TRKLayer::createLayer(TGeoVolume* motherVolume)
       TGeoRotation* rot = new TGeoRotation("rot", theta + 90 + 2, 0, 0);
       trans->SetRotation(rot);
       trans->SetTranslation(mInnerRadius * std::cos(2. * TMath::Pi() * iStave / nStaves), mInnerRadius * std::sin(2 * TMath::Pi() * iStave / nStaves), 0);
-
-      LOGP(info, "Inserting {} in {} ", sensVol->GetName(), chipVol->GetName());
-      chipVol->AddNode(sensVol, 1, nullptr);
-
-      LOGP(info, "Inserting {} in {} ", chipVol->GetName(), staveVol->GetName());
-      staveVol->AddNode(chipVol, 1, nullptr);
 
       LOGP(info, "Inserting {} in {} ", staveVol->GetName(), layerVol->GetName());
       layerVol->AddNode(staveVol, iStave, trans);
