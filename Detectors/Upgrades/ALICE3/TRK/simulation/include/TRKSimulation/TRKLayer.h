@@ -41,7 +41,7 @@ class TRKLayer
 
   TGeoVolume* createSensor(std::string type, double width=-1);
   TGeoVolume* createChip(std::string type, double width=-1);
-  TGeoVolume* createStave(std::string type);
+  TGeoVolume* createStave(std::string type, double width=-1);
   void createLayer(TGeoVolume* motherVolume);
 
  private:

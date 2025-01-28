@@ -90,7 +90,7 @@ TGeoVolume* TRKLayer::createChip(std::string type, double width)
   return chipVol;
 }
 
-TGeoVolume* TRKLayer::createStave(std::string type)
+TGeoVolume* TRKLayer::createStave(std::string type, double width)
 {
   TGeoMedium* medAir = gGeoManager->GetMedium("TRK_AIR$");
   std::string staveName = o2::trk::GeometryTGeo::getTRKStavePattern() + std::to_string(mLayerNumber);
@@ -106,7 +106,7 @@ TGeoVolume* TRKLayer::createStave(std::string type)
     LOGP(info, "Inserting {} in {} ", chipVol->GetName(), staveVol->GetName());
     staveVol->AddNode(chipVol, 1, nullptr);
   } else if (type == "flat") {
-    double width = mModuleWidth * 2; // Each stave has two modules (based on the LOI design)
+    if (width < 0) LOGP(fatal, "Attempting to create stave with invalid width");
     stave = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
     chipVol = createChip("flat", width);
     staveVol = new TGeoVolume(staveName.c_str(), stave, medAir);
@@ -157,7 +157,9 @@ void TRKLayer::createLayer(TGeoVolume* motherVolume)
     layerVol->AddNode(staveVol, 1, nullptr);
   } else if (mLayout == eLayout::kTurboStaves) {
     // Compute the number of staves
-    double width = mModuleWidth * 2; // Each stave has two modules (based on the LOI design)
+    double width = mModuleWidth; // Each stave has two modules (based on the LOI design)
+    if (mInnerRadius > 25) width *= 2; // Outer layers have two modules per stave
+
     int nStaves = (int)std::ceil(mInnerRadius * 2 * TMath::Pi() / width);
     nStaves += nStaves % 2; // Require an even number of staves
 
@@ -171,12 +173,12 @@ void TRKLayer::createLayer(TGeoVolume* motherVolume)
     LOGP(info, "Creating a layer with {} staves and {} mm overlap", nStaves, overlap * 10);
 
     for (int iStave = 0; iStave < nStaves; iStave++) {
-      TGeoVolume* staveVol = createStave("flat");
+      TGeoVolume* staveVol = createStave("flat", width);
 
       // Put the staves in the correct position and orientation
       TGeoCombiTrans* trans = new TGeoCombiTrans();
       double theta = 360. * iStave / nStaves;
-      TGeoRotation* rot = new TGeoRotation("rot", theta + 90 + 2, 0, 0);
+      TGeoRotation* rot = new TGeoRotation("rot", theta + 90 + 3, 0, 0);
       trans->SetRotation(rot);
       trans->SetTranslation(mInnerRadius * std::cos(2. * TMath::Pi() * iStave / nStaves), mInnerRadius * std::sin(2 * TMath::Pi() * iStave / nStaves), 0);
 
