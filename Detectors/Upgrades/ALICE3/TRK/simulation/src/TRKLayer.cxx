@@ -120,12 +120,12 @@ TGeoVolume* TRKLayer::createStave(std::string type, double width)
     staveVol = new TGeoVolume(staveName.c_str(), stave, medAir);
 
     TGeoCombiTrans* transLeft = new TGeoCombiTrans();
-    transLeft->SetTranslation(-mModuleWidth/2, 0, 0);
+    transLeft->SetTranslation(-mModuleWidth/2 + 0.05, 0, 0); // 1mm overlap between the modules
     LOGP(info, "Inserting {} in {} ", chipVolLeft->GetName(), staveVol->GetName());
     staveVol->AddNode(chipVolLeft, 0, transLeft);
 
     TGeoCombiTrans* transRight = new TGeoCombiTrans();
-    transRight->SetTranslation(mModuleWidth/2, 0.2, 0);
+    transRight->SetTranslation(mModuleWidth/2 - 0.05, 0.2, 0);
     LOGP(info, "Inserting {} in {} ", chipVolRight->GetName(), staveVol->GetName());
     staveVol->AddNode(chipVolRight, 1, transRight);
   } else {
