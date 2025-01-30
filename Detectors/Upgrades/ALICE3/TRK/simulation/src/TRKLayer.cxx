@@ -51,8 +51,9 @@ TGeoVolume* TRKLayer::createSensor(std::string type, double width)
   if (type == "cylinder") {
     sensor = new TGeoTube(mInnerRadius, mInnerRadius + mChipThickness, mZ / 2);
   } else if (type == "flat") {
-    if (width < 0)
+    if (width < 0) {
       LOGP(fatal, "Attempting to create sensor with invalid width");
+    }
     sensor = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
   } else {
     LOGP(fatal, "Sensor of type '{}' is not implemented", type);
