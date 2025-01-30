@@ -163,8 +163,9 @@ void TRKLayer::createLayer(TGeoVolume* motherVolume)
   } else if (mLayout == eLayout::kTurboStaves) {
     // Compute the number of staves
     double width = mModuleWidth; // Each stave has two modules (based on the LOI design)
-    if (mInnerRadius > 25)
+    if (mInnerRadius > 25) {
       width *= 2; // Outer layers have two modules per stave
+    }
 
     int nStaves = (int)std::ceil(mInnerRadius * 2 * TMath::Pi() / width);
     nStaves += nStaves % 2; // Require an even number of staves
