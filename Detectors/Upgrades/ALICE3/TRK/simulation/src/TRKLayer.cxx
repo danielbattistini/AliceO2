@@ -77,8 +77,9 @@ TGeoVolume* TRKLayer::createChip(std::string type, double width)
     chip = new TGeoTube(mInnerRadius, mInnerRadius + mChipThickness, mZ / 2);
     sensVol = createSensor("cylinder");
   } else if (type == "flat") {
-    if (width < 0)
+    if (width < 0) {
       LOGP(fatal, "Attempting to create chip with invalid width");
+    }
     chip = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
     sensVol = createSensor("flat", width);
   } else {
