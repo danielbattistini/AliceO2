@@ -108,8 +108,9 @@ TGeoVolume* TRKLayer::createStave(std::string type, double width)
     LOGP(info, "Inserting {} in {} ", chipVol->GetName(), staveVol->GetName());
     staveVol->AddNode(chipVol, 1, nullptr);
   } else if (type == "flat") {
-    if (width < 0)
+    if (width < 0) {
       LOGP(fatal, "Attempting to create stave with invalid width");
+    }
     stave = new TGeoBBox(width / 2, mChipThickness / 2, mZ / 2);
     chipVol = createChip("flat", width);
     staveVol = new TGeoVolume(staveName.c_str(), stave, medAir);
